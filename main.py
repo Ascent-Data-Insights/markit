@@ -32,7 +32,7 @@ def search_and_research():
                 organization=org, anthropic_client=anthropic_client
             )
             all_research.append(research)
-    
+
     if all_research:
         research_df = pl.concat(all_research, how="vertical")
         research_df = research_df.with_columns(
@@ -43,6 +43,7 @@ def search_and_research():
                 pl.col("Trends in Industry Citations").list.join("; "),
                 pl.col("Important Details").list.join("; "),
                 pl.col("Important Details Citations").list.join("; "),
+                pl.col("News Mentions Citations").list.join("; "),
             ]
         )
         research_df.write_csv("test.csv")
@@ -53,13 +54,13 @@ def search_and_research():
 def research(organization: str):
     """Research a specific organization by name."""
     print(f"Researching {organization}...")
-    
+
     anthropic_client = AnthropicClient()
-    
+
     research_df = research_client(
         organization=organization, anthropic_client=anthropic_client
     )
-    
+
     research_df = research_df.with_columns(
         [
             pl.col("Technologies Used").list.join("; "),
@@ -68,9 +69,10 @@ def research(organization: str):
             pl.col("Trends in Industry Citations").list.join("; "),
             pl.col("Important Details").list.join("; "),
             pl.col("Important Details Citations").list.join("; "),
+            pl.col("News Mention Citations").list.join("; "),
         ]
     )
-    
+
     filename = f"{organization.replace(' ', '_').lower()}_research.csv"
     research_df.write_csv(filename)
     print(f"Research saved to {filename}")
