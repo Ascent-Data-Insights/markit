@@ -22,8 +22,3 @@ class AnthropicClient:
         return self.client.messages.create(
             system=self.system_prompt, messages=messages, **kwargs
         )
-    
-    def create_message_from_prompt(self, prompt: str, **kwargs):
-        """Create a message from a single prompt string."""
-        messages = [{"role": "user", "content": prompt}]
-        return self.create_message(messages=messages, **kwargs)
