@@ -60,14 +60,9 @@ def find_clients(
     while not success and attempts <= 5:
 
         print(f"Client search attempt {attempts} ...")
-        message = anthropic_client.create_message(
+        message = anthropic_client.create_message_from_prompt(
+            prompt,
             max_tokens=6000,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
             model="claude-3-5-haiku-latest",
             tools=[
                 {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
