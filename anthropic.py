@@ -4,7 +4,7 @@ import anthropic
 
 class AnthropicClient:
     """A wrapper around the Anthropic client with a shared system prompt."""
-    
+
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.system_prompt = """
@@ -16,11 +16,9 @@ class AnthropicClient:
 
         Use citations to back up your answer to all research questions.
         """
-    
+
     def create_message(self, messages, **kwargs):
         """Create a message using the client with the system prompt."""
         return self.client.messages.create(
-            system=self.system_prompt,
-            messages=messages,
-            **kwargs
+            system=self.system_prompt, messages=messages, **kwargs
         )

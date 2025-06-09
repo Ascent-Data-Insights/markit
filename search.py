@@ -1,7 +1,7 @@
 import polars as pl
 import json
 from anthropic.types.text_block import TextBlock
-from anthropic_client import AnthropicClient
+from anthropic import AnthropicClient
 
 
 def parse_json(
@@ -20,7 +20,9 @@ def parse_json(
     return df, True
 
 
-def find_clients(existing_clients: list[str], anthropic_client: AnthropicClient) -> pl.DataFrame:
+def find_clients(
+    existing_clients: list[str], anthropic_client: AnthropicClient
+) -> pl.DataFrame:
     """Finds clients for Ascent!
 
     The purpose of this function is a first, high level search of names of potential clients.
@@ -98,15 +100,4 @@ def research_client(organization: pl.Series, anthropic_client: AnthropicClient):
 
     Returns:
         Another polars series with added information about the lead.
-    """
-
-
-    prompt = f"""
-
-        Return your result as valid JSON List with an entry per company in the following format: 
-        "Organization" (string), "Industry" (string), "Links" (list[string]), "Reason" (string)
-
-        ONLY return the JSON and no other text. You can include your reason for choosing this company in the "Reason" section of the JSON.
-        There should be no text before the JSON, and no text after the JSON. Every field must contain information, links are not
-        allowed to be empty or null.
     """
