@@ -78,7 +78,9 @@ def find_clients(
     return df
 
 
-def research_client(organization: pl.Series, anthropic_client: AnthropicClient):
+def research_client(
+    organization: pl.Series, anthropic_client: AnthropicClient
+) -> pl.DataFrame:
     """Provides deeper, in depth research on a particular potential client.
 
     Args:
@@ -88,3 +90,51 @@ def research_client(organization: pl.Series, anthropic_client: AnthropicClient):
     Returns:
         Another polars series with added information about the lead.
     """
+
+    prompt = f"""
+        Please do some web search research on the business **{organization}** in the Greater Cincinnati
+        area. We would like to answer the following questions:
+
+        * Who should we contact to try to pitch this company? Typically this will be an owner or CTO.
+        * What is their name, work email, and/or work phone number?
+        * If they have a generic email or phone nuber for the business, get that as well.
+        * Estimated Revenue 
+        * Estimated Employee Count
+        * Any mentions of technologies they use, like databases, SaaS companies, cloud providers, etc.
+        * Do broader research on this industry and help us understand the big trends in this industry right now.
+        * Call out three important details about this company.
+
+        Return your result as valid JSON List with an entry per company in the following format: 
+        "Organization" (string), Contact Name (string), Contact Role (string), Contact Phone Number (string),
+        Contact Email (string), Contact Citation [string], Generic Email (string), Generic Phone Number (string), Generic Citation [string],
+        Revenue (number), Headcount (number),
+        Technologies Used (List[string]), Technologies Used Citations [list[string]], Trends in industry (List[string]),
+        Trends in Industry Citations [list[string][, Important Details (List[string]), Important Details Citations [list[string]].
+
+        ONLY return the JSON and no other text. There should be no text before the JSON, and no text after the JSON. 
+        Each of the "Citations" Fields should contain a valid URL to where you got this particular information. Double check
+        that all provided links are valid and go to live web pages referencing where you got that particular information.
+    """
+
+    success = False
+    attempts = 1
+    df = None
+    while not success and attempts <= 5:
+
+        print(f"Client research attempt {attempts} ...")
+        message = anthropic_client.create_message(prompt=prompt)
+
+        final_message = message.content[-1]
+        assert isinstance(
+            final_message,
+            TextBlock,
+        )
+        df, success = parse_json(message=final_message)
+        attempts += 1
+
+    if df is None:
+        raise ValueError("Failed to generate valid JSON")
+
+    print("Research Generated!")
+    print(df)
+    return df
