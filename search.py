@@ -1,0 +1,134 @@
+import os
+import polars as pl
+import json
+import anthropic
+from anthropic.types.text_block import TextBlock
+
+
+def parse_json(
+    message: TextBlock,
+) -> tuple[pl.DataFrame, bool]:
+    """Attempts to parse JSON from an anthropic TextBlock.
+
+    Just tries to shove the provided message into JSON. If it fails, we return
+    False, signaling for a retry.
+    """
+    try:
+        valid_json = json.loads(message.text)
+    except json.JSONDecodeError:
+        return pl.DataFrame(), False
+    df = pl.DataFrame(valid_json)
+    return df, True
+
+
+def find_clients(existing_clients: list[str]) -> pl.DataFrame:
+    """Finds clients for Ascent!
+
+    The purpose of this function is a first, high level search of names of potential clients.
+    We do not ask for much detail here, just who they are, some basic links, and why the AI
+    thinks they might be a good choice.
+
+    existing_clients: A list of strings containing the names of organizations already in our
+        contact list. We will instruct the AI to avoid these.
+
+    """
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    system_prompt = """
+        You are a very helpful assistant to a small consulting startup called Ascent Data Insights.
+        Ascent is based in Cincinnati, OH, and is a data science consulting company with two employees.
+        Our mission is to help small-to-medium sized businesses get the most value out of their data by 
+        helping them capture data and improve existing processes. You are going to help us find and research
+        potential clients in the Greater Cincinnati Area. 
+
+        Use citations to back up your answer to all research questions.
+    """
+
+    prompt = f"""
+        Begin by searching the web for companies in Cincinati, Dayton, and Northern Kentucky 
+        that would be great clients for Ascent Data Insights.
+        Provide me with your top 5 choices.
+
+        Below is a list of existing clients we have contacted already, do not include anyone from this list
+        in your recommendations.
+        {existing_clients}
+
+        Focus on companies that are small to medium sized businesses, such as HVAC, Home Services, Restaurants, etc. 
+        Companies like tech startups should be ignored. Healthcare is okay, but should be deprioritized.
+
+        Return your result as valid JSON List with an entry per company in the following format: 
+        "Organization" (string), "Industry" (string), "Links" (list[string]), "Reason" (string)
+
+        ONLY return the JSON and no other text. You can include your reason for choosing this company in the "Reason" section of the JSON.
+        There should be no text before the JSON, and no text after the JSON. Every field must contain information, links are not
+        allowed to be empty or null. Provide links for every company.
+    """
+
+    success = False
+    attempts = 1
+    df = None
+    while not success and attempts <= 5:
+
+        print(f"Client search attempt {attempts} ...")
+        message = client.messages.create(
+            max_tokens=6000,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            model="claude-3-5-haiku-latest",
+            tools=[
+                {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
+            ],
+            # thinking={"type": "enabled", "budget_tokens": 2000},
+        )
+
+        final_message = message.content[-1]
+        assert isinstance(
+            final_message,
+            TextBlock,
+        )
+        df, success = parse_json(message=final_message)
+        attempts += 1
+
+    if df is None:
+        raise ValueError("Failed to generate valid JSON")
+
+    print("New Leads Generated!")
+    print(df)
+    return df
+
+
+def research_client(organization: pl.Series):
+    """Provides deeper, in depth research on a particular potential client.
+
+    Args:
+        organization: A series of info on the company we want to do business on. Should
+            be a row from find_clients().
+
+    Returns:
+        Another polars series with added information about the lead.
+    """
+
+    system_prompt = """
+        You are a very helpful assistant to a small consulting startup called Ascent Data Insights.
+        Ascent is based in Cincinnati, OH, and is a data science consulting company with two employees.
+        Our mission is to help small-to-medium sized businesses get the most value out of their data by 
+        helping them capture data and improve existing processes. You are going to help us find and research
+        potential clients in the Greater Cincinnati Area. 
+
+        Use citations to back up your answer to all research questions.
+    """
+
+    prompt = f"""
+
+        Return your result as valid JSON List with an entry per company in the following format: 
+        "Organization" (string), "Industry" (string), "Links" (list[string]), "Reason" (string)
+
+        ONLY return the JSON and no other text. You can include your reason for choosing this company in the "Reason" section of the JSON.
+        There should be no text before the JSON, and no text after the JSON. Every field must contain information, links are not
+        allowed to be empty or null.
+    """
