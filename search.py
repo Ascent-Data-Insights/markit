@@ -1,8 +1,7 @@
-import os
 import polars as pl
 import json
-import anthropic
 from anthropic.types.text_block import TextBlock
+from anthropic_client import AnthropicClient
 
 
 def parse_json(
@@ -21,7 +20,7 @@ def parse_json(
     return df, True
 
 
-def find_clients(existing_clients: list[str]) -> pl.DataFrame:
+def find_clients(existing_clients: list[str], anthropic_client: AnthropicClient) -> pl.DataFrame:
     """Finds clients for Ascent!
 
     The purpose of this function is a first, high level search of names of potential clients.
@@ -31,17 +30,6 @@ def find_clients(existing_clients: list[str]) -> pl.DataFrame:
     existing_clients: A list of strings containing the names of organizations already in our
         contact list. We will instruct the AI to avoid these.
 
-    """
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
-    system_prompt = """
-        You are a very helpful assistant to a small consulting startup called Ascent Data Insights.
-        Ascent is based in Cincinnati, OH, and is a data science consulting company with two employees.
-        Our mission is to help small-to-medium sized businesses get the most value out of their data by 
-        helping them capture data and improve existing processes. You are going to help us find and research
-        potential clients in the Greater Cincinnati Area. 
-
-        Use citations to back up your answer to all research questions.
     """
 
     prompt = f"""
@@ -70,9 +58,8 @@ def find_clients(existing_clients: list[str]) -> pl.DataFrame:
     while not success and attempts <= 5:
 
         print(f"Client search attempt {attempts} ...")
-        message = client.messages.create(
+        message = anthropic_client.create_message(
             max_tokens=6000,
-            system=system_prompt,
             messages=[
                 {
                     "role": "user",
@@ -102,7 +89,7 @@ def find_clients(existing_clients: list[str]) -> pl.DataFrame:
     return df
 
 
-def research_client(organization: pl.Series):
+def research_client(organization: pl.Series, anthropic_client: AnthropicClient):
     """Provides deeper, in depth research on a particular potential client.
 
     Args:
@@ -113,15 +100,6 @@ def research_client(organization: pl.Series):
         Another polars series with added information about the lead.
     """
 
-    system_prompt = """
-        You are a very helpful assistant to a small consulting startup called Ascent Data Insights.
-        Ascent is based in Cincinnati, OH, and is a data science consulting company with two employees.
-        Our mission is to help small-to-medium sized businesses get the most value out of their data by 
-        helping them capture data and improve existing processes. You are going to help us find and research
-        potential clients in the Greater Cincinnati Area. 
-
-        Use citations to back up your answer to all research questions.
-    """
 
     prompt = f"""
 
