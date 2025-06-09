@@ -1,7 +1,7 @@
 import polars as pl
 import json
 from anthropic.types.text_block import TextBlock
-from anthropic import AnthropicClient
+from anthropic_client import AnthropicClient
 
 
 def parse_json(
@@ -60,20 +60,7 @@ def find_clients(
     while not success and attempts <= 5:
 
         print(f"Client search attempt {attempts} ...")
-        message = anthropic_client.create_message(
-            max_tokens=6000,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
-            model="claude-3-5-haiku-latest",
-            tools=[
-                {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
-            ],
-            # thinking={"type": "enabled", "budget_tokens": 2000},
-        )
+        message = anthropic_client.create_message(prompt=prompt)
 
         final_message = message.content[-1]
         assert isinstance(
