@@ -18,8 +18,8 @@ class AnthropicClient:
 
         Use citations to back up your answer to all research questions.
         """
-        self.model = "claude-3-5-haiku-latest"
-        # self.model = "claude-3-5-sonnet-latest"
+        # self.model = "claude-3-5-haiku-latest"
+        self.model = "claude-3-5-sonnet-latest"
         # self.model = "claude-3-7-sonnet-20250219"
 
     def create_message(self, prompt, **kwargs):

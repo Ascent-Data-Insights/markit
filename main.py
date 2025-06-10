@@ -69,7 +69,6 @@ def research(organization: str):
             pl.col("Trends in Industry Citations").list.join("; "),
             pl.col("Important Details").list.join("; "),
             pl.col("Important Details Citations").list.join("; "),
-            pl.col("News Mention Citations").list.join("; "),
         ]
     )
 

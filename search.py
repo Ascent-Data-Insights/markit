@@ -100,7 +100,6 @@ def research_client(
         * If they have a generic email or phone nuber for the business, get that as well.
         * Estimated Revenue 
         * Estimated Employee Count
-        * Any mentions they have in news articles or journals
         * Any mentions of technologies they use, like databases, SaaS companies, cloud providers, etc.
         * Do broader research on this industry and help us understand the big trends in this industry right now.
         * Call out three important details about this company.
@@ -108,7 +107,7 @@ def research_client(
         Return your result as valid JSON List with an entry per company in the following format: 
         "Organization" (string), Contact Name (string), Contact Role (string), Contact Phone Number (string),
         Contact Email (string), Contact Citation [string], Generic Email (string), Generic Phone Number (string), Generic Citation [string],
-        Revenue (number), Headcount (number), News Mention Citations (List[string])
+        Revenue (number), Headcount (number),
         Technologies Used (List[string]), Technologies Used Citations [list[string]], Trends in Industry (List[string]),
         Trends in Industry Citations [list[string][, Important Details (List[string]), Important Details Citations [list[string]].
 
