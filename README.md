@@ -29,9 +29,9 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
    uv sync
    ```
 
-4. Set up environment variables:
+4. Set up environment variables with a .env file:
    ```bash
-   export ANTHROPIC_API_KEY="your-anthropic-api-key"
+   ANTHROPIC_API_KEY="your-anthropic-api-key"
    ```
 
 ## Usage
@@ -41,25 +41,29 @@ This project uses [uv](https://docs.astral.sh/uv/) for dependency management.
 Find new potential clients and optionally research them:
 
 ```bash
-uv run python main.py search-and-research
+uv run --env-file .env python main.py search-and-research
 ```
+Optional arguments:
+- `"--ai-interface`: To specify the AI interface to use (`anthropic` or `perplexity`). Default is `perplexity`.
 
 ### Research a Specific Organization
 
 Research a specific organization by name:
 
 ```bash
-uv run python main.py research "Company Name"
+uv run --env-file .env python main.py research "Company Name"
 ```
+Optional arguments:
+- `"--ai-interface`: To specify the AI interface to use (`anthropic` or `perplexity`). Default is `perplexity`.
 
 ## Requirements
 
 - Python 3.12+
-- Anthropic API key
+- Anthropic API key -or- Perplexity API key
 
 ## Output
 
 Research results are saved as CSV files:
 
-- `search-and-research` command saves to `test.csv`
+- `search-and-research` command saves to `research_results_YYYYMMDD_HHMMSS.csv`
 - `research` command saves to `{organization_name}_research.csv`
