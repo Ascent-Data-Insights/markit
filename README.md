@@ -67,3 +67,16 @@ Research results are saved as CSV files:
 
 - `search-and-research` command saves to `research_results_YYYYMMDD_HHMMSS.csv`
 - `research` command saves to `{organization_name}_research.csv`
+
+## Contributing
+
+Please use pre-commit hooks for code formatting and linting. Install pre-commit if you haven't already:
+```bash
+brew install pre-commit
+pre-commit install
+```
+
+Pre-commit should then automatically run when you commit, to run pre-commit checks manually:
+```bash
+pre-commit run --all-files
+```
