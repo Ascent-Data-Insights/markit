@@ -1,14 +1,16 @@
-import polars as pl
+"""Functions for finding and researching potential clients for Ascent Data Insights."""
+
 import json
-# from anthropic.types.text_block import TextBlock
-# from ai_clients.anthropic_client import AnthropicClient
+
+import polars as pl
+
 from ai_interfaces.base_interface import BaseInterface
 
 
 def parse_json(
     message: str,
 ) -> tuple[pl.DataFrame, bool]:
-    """Attempts to parse JSON from a string.
+    """Attempt to parse JSON from a string.
 
     Just tries to shove the provided message into JSON. If it fails, we return
     False, signaling for a retry.
@@ -21,22 +23,26 @@ def parse_json(
         return pl.DataFrame(), False
 
 
-def find_clients(
-    existing_clients: list[str], ai_interface: BaseInterface
-) -> pl.DataFrame:
-    """Finds clients for Ascent!
+def find_clients(existing_clients: list[str], ai_interface: BaseInterface) -> pl.DataFrame:
+    """Find clients for Ascent!.
 
     The purpose of this function is a first, high level search of names of potential clients.
     We do not ask for much detail here, just who they are, some basic links, and why the AI
     thinks they might be a good choice.
 
-    existing_clients: A list of strings containing the names of organizations already in our
-        contact list. We will instruct the AI to avoid these.
+    Args:
+    ----
+        existing_clients: A list of strings containing the names of organizations already in our
+            contact list. We will instruct the AI to avoid these.
+        ai_interface: The AI client to use for research.
+
+    Returns:
+    -------
+        A Polars DataFrame with client information.
 
     """
-
     prompt = f"""
-        Begin by searching the web for companies in Cincinati, Dayton, and Northern Kentucky 
+        Begin by searching the web for companies in Cincinati, Dayton, and Northern Kentucky
         that would be great clients for Ascent Data Insights.
         Provide me with your top 5 choices.
 
@@ -44,10 +50,10 @@ def find_clients(
         in your recommendations.
         {existing_clients}
 
-        Focus on companies that are small to medium sized businesses, such as HVAC, Home Services, Restaurants, etc. 
+        Focus on companies that are small to medium sized businesses, such as HVAC, Home Services, Restaurants, etc.
         Companies like tech startups should be ignored. Healthcare is okay, but should be deprioritized.
 
-        Return your result as valid JSON List with an entry per company in the following format: 
+        Return your result as valid JSON List with an entry per company in the following format:
         "Organization" (string), "Industry" (string), "Links" (list[string]), "Reason" (string)
 
         ONLY return the JSON and no other text. You can include your reason for choosing this company in the "Reason" section of the JSON.
@@ -62,7 +68,7 @@ def find_clients(
 
         print(f"Client search attempt {attempts} ...")
         message = ai_interface.create_message(prompt=prompt)
-        print('Raw message:', message)
+        print("Raw message:", message)
 
         df, success = parse_json(message=message)
         attempts += 1
@@ -75,19 +81,20 @@ def find_clients(
     return df
 
 
-def research_client(
-    organization: pl.Series, ai_interface: BaseInterface
-) -> pl.DataFrame:
-    """Provides deeper, in depth research on a particular potential client.
+def research_client(organization: pl.Series, ai_interface: BaseInterface) -> pl.DataFrame:
+    """Provide deeper, in depth research on a particular potential client.
 
     Args:
+    ----
         organization: A series of info on the company we want to do business on. Should
             be a row from find_clients().
+        ai_interface: The AI client to use for research.
 
     Returns:
-        Another polars series with added information about the lead.
-    """
+    -------
+        A Polars DataFrame with added information about the lead.
 
+    """
     prompt = f"""
         Please do some web search research on the business **{organization}** in the Greater Cincinnati
         area. We would like to answer the following questions:
@@ -95,20 +102,20 @@ def research_client(
         * Who should we contact to try to pitch this company? Typically this will be an owner or CTO.
         * What is their name, work email, and/or work phone number?
         * If they have a generic email or phone nuber for the business, get that as well.
-        * Estimated Revenue 
+        * Estimated Revenue
         * Estimated Employee Count
         * Any mentions of technologies they use, like databases, SaaS companies, cloud providers, etc.
         * Do broader research on this industry and help us understand the big trends in this industry right now.
         * Call out three important details about this company.
 
-        Return your result as valid JSON List with an entry per company in the following format: 
+        Return your result as valid JSON List with an entry per company in the following format:
         "Organization" (string), Contact Name (string), Contact Role (string), Contact Phone Number (string),
         Contact Email (string), Contact Citation [string], Generic Email (string), Generic Phone Number (string), Generic Citation [string],
         Revenue (number), Headcount (number),
         Technologies Used (List[string]), Technologies Used Citations [list[string]], Trends in Industry (List[string]),
         Trends in Industry Citations [list[string][, Important Details (List[string]), Important Details Citations [list[string]].
 
-        ONLY return the JSON and no other text. There should be no text before the JSON, and no text after the JSON. 
+        ONLY return the JSON and no other text. There should be no text before the JSON, and no text after the JSON.
         Each of the "Citations" Fields should contain a valid URL to where you got this particular information. Double check
         that all provided links are valid and go to live web pages referencing where you got that particular information.
     """
@@ -127,7 +134,7 @@ def research_client(
     if df is None:
         raise ValueError("Failed to generate valid JSON")
 
-    # Handle empty (not found) values 
+    # Handle empty (not found) values
     # If a value is empty, we want to replace it with a list of an empty string
     # TODO: a more elegant way to do this?
     df = df.with_columns(
