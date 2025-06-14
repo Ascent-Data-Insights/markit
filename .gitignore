@@ -1,2 +1,5 @@
 .aider*
 __pycache__
+.env
+*.csv
+*.egg-info
