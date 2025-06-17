@@ -1,12 +1,17 @@
+"""Interface for sending requests to the Perplexity API with a shared system prompt."""
+
 import os
-from ai_interfaces.base_interface import BaseInterface
+
 from openai import OpenAI
+
+from ai_interfaces.base_interface import BaseInterface
 
 
 class PerplexityInterface(BaseInterface):
     """Perplexity client."""
 
     def __init__(self):
+        """Initialize the Perplexity interface with the API key from environment variables."""
         super().__init__(api_key=os.environ["PERPLEXITY_API_KEY"])
         self.model = "sonar"
 
@@ -19,7 +24,7 @@ class PerplexityInterface(BaseInterface):
                 "role": "system",
                 "content": self.system_prompt,
             },
-            {   
+            {
                 "role": "user",
                 "content": prompt,
             },
@@ -33,6 +38,6 @@ class PerplexityInterface(BaseInterface):
         message = response.choices[0].message.content
 
         # Strip the message of code block notation if it exists
-        message = message.strip('```').strip('json')
+        message = message.replace("```", "").replace("json", "")
 
         return message

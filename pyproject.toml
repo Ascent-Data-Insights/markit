@@ -12,3 +12,77 @@ dependencies = [
     "typer>=0.16.0",
     "openai>=1.86.0",
 ]
+
+[tool.ruff]
+# Enable specific lint rules and sets of rules.
+# See https://docs.astral.sh/ruff/rules/#available-rules for more information.
+lint.select = [
+    "E", # Error
+    "W", # Warning
+    "F", # Pyflakes
+    "C", # Complexity
+    "I", # Isort
+    "N", # Naming
+    "D", # Docstrings 
+    "UP", # Pyupgrade
+    "PLE", # Pylint Error
+    "PLW", # Pylint Warning
+    "B", # Bugbear
+    "A", # Ansible (if applicable, otherwise remove)
+    "TID", # Tidy Imports
+    "ERA", # Eradicate (commented out code)
+    "RUF", # Ruff-specific rules
+]
+
+# Exclude files or directories from linting.
+lint.exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Allow autofix for all enabled rules (when using `ruff check --fix`).
+fix = true
+line-length = 140
+
+# Per-file-ignores.
+# For example, to ignore D100 (missing docstring in public module) in __init__.py:
+# per-file-ignores = {"__init__.py" = ["D100"]}
+
+[tool.black]
+line-length = 140
+target-version = ['py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 140
+known_first_party = ["markit"]
