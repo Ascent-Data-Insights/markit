@@ -1,24 +1,35 @@
+import datetime as dt
 import polars as pl
 import typer
 from onedrive import read_excel
 from search import find_clients, research_client
-from anthropic_client import AnthropicClient
+from ai_interfaces.base_interface import BaseInterface
+from ai_interfaces.anthropic_interface import AnthropicInterface
+from ai_interfaces.perplexity_interface import PerplexityInterface
 
 app = typer.Typer()
 
+def interface_constructor(name: str) -> BaseInterface:
+    """Constructs an AI client based on the provided name."""
+    if name.lower() == "anthropic":
+        return AnthropicInterface()
+    elif name.lower() == "perplexity":
+        return PerplexityInterface()
+    else:
+        raise ValueError(f"Unknown client name: {name}")
 
 @app.command()
-def search_and_research():
+def search_and_research(ai_interface: str = "perplexity"):
     """Find new clients and optionally research them."""
     print("Hello from markit!")
 
-    anthropic_client = AnthropicClient()
+    ai_interface = interface_constructor(ai_interface)
 
     df = read_excel()
     existing_clients = pl.Series(df.select("Organization")).to_list()
 
     new_clients = find_clients(
-        existing_clients=existing_clients, anthropic_client=anthropic_client
+        existing_clients=existing_clients, ai_interface=ai_interface
     )
 
     all_research = []
@@ -29,7 +40,7 @@ def search_and_research():
         ).strip().lower() in ["", "y", "yes"]
         if research:
             research = research_client(
-                organization=org, anthropic_client=anthropic_client
+                organization=org, ai_interface=ai_interface
             )
             all_research.append(research)
 
@@ -43,22 +54,22 @@ def search_and_research():
                 pl.col("Trends in Industry Citations").list.join("; "),
                 pl.col("Important Details").list.join("; "),
                 pl.col("Important Details Citations").list.join("; "),
-                pl.col("News Mentions Citations").list.join("; "),
             ]
         )
-        research_df.write_csv("test.csv")
-        print("Research saved to test.csv")
+        filename = f"research_results_{dt.datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        research_df.write_csv(filename)
+        print(f"Research saved to {filename}")
 
 
 @app.command()
-def research(organization: str):
+def research(organization: str, ai_interface: str = "perplexity"):
     """Research a specific organization by name."""
     print(f"Researching {organization}...")
 
-    anthropic_client = AnthropicClient()
+    ai_interface = interface_constructor(ai_interface)
 
     research_df = research_client(
-        organization=organization, anthropic_client=anthropic_client
+        organization=organization, ai_interface=ai_interface
     )
 
     research_df = research_df.with_columns(

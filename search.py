@@ -1,27 +1,28 @@
 import polars as pl
 import json
-from anthropic.types.text_block import TextBlock
-from anthropic_client import AnthropicClient
+# from anthropic.types.text_block import TextBlock
+# from ai_clients.anthropic_client import AnthropicClient
+from ai_interfaces.base_interface import BaseInterface
 
 
 def parse_json(
-    message: TextBlock,
+    message: str,
 ) -> tuple[pl.DataFrame, bool]:
-    """Attempts to parse JSON from an anthropic TextBlock.
+    """Attempts to parse JSON from a string.
 
     Just tries to shove the provided message into JSON. If it fails, we return
     False, signaling for a retry.
     """
     try:
-        valid_json = json.loads(message.text)
+        valid_json = json.loads(message)
+        df = pl.DataFrame(valid_json)
+        return df, True
     except json.JSONDecodeError:
         return pl.DataFrame(), False
-    df = pl.DataFrame(valid_json)
-    return df, True
 
 
 def find_clients(
-    existing_clients: list[str], anthropic_client: AnthropicClient
+    existing_clients: list[str], ai_interface: BaseInterface
 ) -> pl.DataFrame:
     """Finds clients for Ascent!
 
@@ -60,14 +61,10 @@ def find_clients(
     while not success and attempts <= 5:
 
         print(f"Client search attempt {attempts} ...")
-        message = anthropic_client.create_message(prompt=prompt)
+        message = ai_interface.create_message(prompt=prompt)
+        print('Raw message:', message)
 
-        final_message = message.content[-1]
-        assert isinstance(
-            final_message,
-            TextBlock,
-        )
-        df, success = parse_json(message=final_message)
+        df, success = parse_json(message=message)
         attempts += 1
 
     if df is None:
@@ -79,7 +76,7 @@ def find_clients(
 
 
 def research_client(
-    organization: pl.Series, anthropic_client: AnthropicClient
+    organization: pl.Series, ai_interface: BaseInterface
 ) -> pl.DataFrame:
     """Provides deeper, in depth research on a particular potential client.
 
@@ -122,18 +119,45 @@ def research_client(
     while not success and attempts <= 5:
 
         print(f"Client research attempt {attempts} ...")
-        message = anthropic_client.create_message(prompt=prompt)
+        message = ai_interface.create_message(prompt=prompt)
 
-        final_message = message.content[-1]
-        assert isinstance(
-            final_message,
-            TextBlock,
-        )
-        df, success = parse_json(message=final_message)
+        df, success = parse_json(message=message)
         attempts += 1
 
     if df is None:
         raise ValueError("Failed to generate valid JSON")
+
+    # Handle empty (not found) values 
+    # If a value is empty, we want to replace it with a list of an empty string
+    # TODO: a more elegant way to do this?
+    df = df.with_columns(
+        [
+            pl.when(pl.col("Technologies Used").is_null() | pl.col("Technologies Used").list.len() == 0)
+            .then([""])
+            .otherwise(pl.col("Technologies Used"))
+            .alias("Technologies Used"),
+            pl.when(pl.col("Technologies Used Citations").is_null() | pl.col("Technologies Used Citations").list.len() == 0)
+            .then([""])
+            .otherwise(pl.col("Technologies Used Citations"))
+            .alias("Technologies Used Citations"),
+            pl.when(pl.col("Trends in Industry").is_null() | pl.col("Trends in Industry").list.len() == 0)
+            .then([""])
+            .otherwise(pl.col("Trends in Industry"))
+            .alias("Trends in Industry"),
+            pl.when(pl.col("Trends in Industry Citations").is_null() | pl.col("Trends in Industry Citations").list.len() == 0)
+            .then([""])
+            .otherwise(pl.col("Trends in Industry Citations"))
+            .alias("Trends in Industry Citations"),
+            pl.when(pl.col("Important Details").is_null() | pl.col("Important Details").list.len() == 0)
+            .then([""])
+            .otherwise(pl.col("Important Details"))
+            .alias("Important Details"),
+            pl.when(pl.col("Important Details Citations").is_null() | pl.col("Important Details Citations").list.len() == 0)
+            .then([""])
+            .otherwise(pl.col("Important Details Citations"))
+            .alias("Important Details Citations"),
+        ]
+    )
 
     print("Research Generated!")
     print(df)
